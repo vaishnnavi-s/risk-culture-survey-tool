@@ -1,46 +1,78 @@
 import { useEffect, useState } from "react"
-import axios from "axios"
+import { getRisks } from "../services/riskService"
+import "./ListPage.css"
 
 function ListPage() {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
 
- useEffect(() => {
-  setTimeout(() => {
-    setData([
-      { id: 1, name: "Risk 1", status: "Open" },
-      { id: 2, name: "Risk 2", status: "Closed" },
-    ])
-    setLoading(false)
-  }, 1000)
-}, [])
-  if (loading) {
-    return <p>Loading...</p>
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      const result = await getRisks()
 
-  if (data.length === 0) {
-    return <p>No data available</p>
+      setData(result.content)
+
+      setLoading(false)
+    }
+
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return <h1 className="loading">Loading...</h1>
   }
 
   return (
-    <table border="1" className="mt-5">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {data.map((item) => (
-          <tr key={item.id}>
-            <td>{item.id}</td>
-            <td>{item.name}</td>
-            <td>{item.status}</td>
+    <div className="container">
+
+      <h1 className="title">
+        Risk Survey List
+      </h1>
+
+      <table className="risk-table">
+
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Score</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+
+        <tbody>
+
+          {data.map((item) => (
+
+            <tr key={item.id}>
+
+              <td>{item.title}</td>
+
+              <td>{item.description}</td>
+
+              <td>
+                <span
+                  className={
+                    item.status === "OPEN"
+                      ? "status-open"
+                      : "status-closed"
+                  }
+                >
+                  {item.status}
+                </span>
+              </td>
+
+              <td>{item.score}</td>
+
+            </tr>
+
+          ))}
+
+        </tbody>
+
+      </table>
+
+    </div>
   )
 }
 
