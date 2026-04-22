@@ -1,11 +1,8 @@
-import ListPage from "./pages/ListPage"
+import FormPage from "./pages/FormPage"
 
 function App() {
   return (
-    <div className="p-5">
-      <h1 className="text-2xl mb-4">Risk List</h1>
-      <ListPage />
-    </div>
+    <FormPage />
   )
 }
 
