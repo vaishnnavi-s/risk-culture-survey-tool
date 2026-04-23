@@ -1,79 +1,156 @@
+import { getSurveys } from "../services/surveyService"
 import { useEffect, useState } from "react"
-import { getRisks } from "../services/riskService"
 import "./ListPage.css"
 
 function ListPage() {
+
   const [data, setData] = useState([])
-  const [loading, setLoading] = useState(true)
+
+  const [page, setPage] = useState(1)
+
+  const [sortOrder, setSortOrder] = useState("asc")
 
   useEffect(() => {
-    const fetchData = async () => {
-      const result = await getRisks()
 
-      setData(result.content)
+  const fetchData = async () => {
 
-      setLoading(false)
-    }
+    const result = await getSurveys()
 
-    fetchData()
-  }, [])
+    setData(result.content)
 
-  if (loading) {
-    return <h1 className="loading">Loading...</h1>
   }
 
+  fetchData()
+
+}, [])
+
+  const handleSort = () => {
+
+    const sorted = [...data].sort((a, b) => {
+
+      if (sortOrder === "asc") {
+        return a.score - b.score
+      }
+
+      return b.score - a.score
+
+    })
+
+    setData(sorted)
+
+    setSortOrder(
+      sortOrder === "asc" ? "desc" : "asc"
+    )
+
+  }
+
+  const itemsPerPage = 2
+
+  const startIndex = (page - 1) * itemsPerPage
+
+  const paginatedData =
+    data.slice(
+      startIndex,
+      startIndex + itemsPerPage
+    )
+
   return (
-    <div className="container">
 
-      <h1 className="title">
-        Risk Survey List
-      </h1>
+    <div className="list-container">
 
-      <table className="risk-table">
+      <div className="table-card">
 
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Description</th>
-            <th>Status</th>
-            <th>Score</th>
-          </tr>
-        </thead>
+        <h1 className="table-title">
+          Risk Survey List
+        </h1>
 
-        <tbody>
+        <table>
 
-          {data.map((item) => (
+          <thead>
 
-            <tr key={item.id}>
+            <tr>
 
-              <td>{item.title}</td>
+              <th>Title</th>
 
-              <td>{item.description}</td>
+              <th>Description</th>
 
-              <td>
-                <span
-                  className={
-                    item.status === "OPEN"
-                      ? "status-open"
-                      : "status-closed"
-                  }
-                >
-                  {item.status}
-                </span>
-              </td>
+              <th>Status</th>
 
-              <td>{item.score}</td>
+              <th
+                onClick={handleSort}
+                style={{ cursor: "pointer" }}
+              >
+                Score ↕
+              </th>
 
             </tr>
 
-          ))}
+          </thead>
 
-        </tbody>
+          <tbody>
 
-      </table>
+            {paginatedData.map((item) => (
+
+              <tr key={item.id}>
+
+                <td>{item.title}</td>
+
+                <td>{item.description}</td>
+
+                <td>
+
+                  <span
+                    className={
+                      item.status === "OPEN"
+                        ? "open-status"
+                        : "closed-status"
+                    }
+                  >
+                    {item.status}
+                  </span>
+
+                </td>
+
+                <td>{item.score}</td>
+
+              </tr>
+
+            ))}
+
+          </tbody>
+
+        </table>
+
+        <div className="pagination">
+
+          <button
+            onClick={() => setPage(page - 1)}
+            disabled={page === 1}
+          >
+            Previous
+          </button>
+
+          <span>
+            Page {page}
+          </span>
+
+          <button
+            onClick={() => setPage(page + 1)}
+            disabled={
+              startIndex + itemsPerPage >= data.length
+            }
+          >
+            Next
+          </button>
+
+        </div>
+
+      </div>
 
     </div>
+
   )
+
 }
 
 export default ListPage

@@ -1,9 +1,7 @@
-import FormPage from "./pages/FormPage"
+import ListPage from "./pages/ListPage"
 
 function App() {
-  return (
-    <FormPage />
-  )
+  return <ListPage />
 }
 
 export default App
