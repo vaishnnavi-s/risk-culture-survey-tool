@@ -1,10 +1,10 @@
 from flask import Flask, request, jsonify
 from services.input_sanitizer import validate_request
-from routes.categorise import categorise_bp   # 👈 NEW
+from routes.categorise import categorise_bp   # 👈 teammate import
 
 app = Flask(__name__)
 
-# 👇 Register teammate route
+# 👇 register teammate route
 app.register_blueprint(categorise_bp)
 
 @app.before_request
