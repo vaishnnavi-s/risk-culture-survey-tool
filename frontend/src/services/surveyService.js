@@ -1,44 +1,149 @@
-export const getSurveys = async () => {
+export const getSurveys = async (
+  page = 0
+) => {
+
+  await new Promise(
+    (resolve) =>
+      setTimeout(resolve, 1000)
+  )
+
+  const allData = [
+
+    {
+      id: 1,
+      title: "Employee Feedback",
+      description:
+        "Work culture survey",
+      deleted: false
+    },
+
+    {
+      id: 2,
+      title: "Security Survey",
+      description:
+        "Security awareness",
+      deleted: false
+    },
+
+    {
+      id: 3,
+      title: "HR Survey",
+      description:
+        "HR feedback",
+      deleted: false
+    },
+
+    {
+      id: 4,
+      title: "Risk Survey",
+      description:
+        "Risk management",
+      deleted: false
+    }
+
+  ]
+
+  const itemsPerPage = 2
+
+  const start =
+    page * itemsPerPage
+
+  const end =
+    start + itemsPerPage
 
   return {
 
-    content: [
+    content:
+      allData.slice(
+        start,
+        end
+      ),
+
+    totalPages:
+      Math.ceil(
+        allData.length /
+          itemsPerPage
+      ),
+
+    number: page
+
+  }
+
+}
+
+export const createSurvey = async (
+  surveyData
+) => {
+
+  return {
+
+    id: Date.now(),
+
+    ...surveyData,
+
+    deleted: false
+
+  }
+
+}
+
+export const updateSurvey = async (
+  id,
+  updatedData
+) => {
+
+  return {
+
+    id,
+
+    ...updatedData,
+
+    deleted: false
+
+  }
+
+}
+
+export const getStats = async () => {
+
+  await new Promise(
+    (resolve) =>
+      setTimeout(resolve, 1000)
+  )
+
+  return {
+
+    totalSurveys: 24,
+
+    activeSurveys: 18,
+
+    completedSurveys: 6,
+
+    deletedSurveys: 2,
+
+    chartData: [
 
       {
-        id: 1,
-        title: "Security Risk",
-        description: "Weak password policy",
-        status: "OPEN",
-        score: 85
+        name: "HR",
+        surveys: 8
       },
 
       {
-        id: 2,
-        title: "Compliance Risk",
-        description: "Missing audit logs",
-        status: "CLOSED",
-        score: 60
+        name: "Security",
+        surveys: 5
       },
 
       {
-        id: 3,
-        title: "Network Risk",
-        description: "Firewall issue",
-        status: "OPEN",
-        score: 90
+        name: "Risk",
+        surveys: 7
       },
 
       {
-        id: 4,
-        title: "Cloud Risk",
-        description: "Storage exposure",
-        status: "OPEN",
-        score: 70
+        name: "Culture",
+        surveys: 4
       }
 
-    ],
-
-    totalPages: 2
+    ]
 
   }
 

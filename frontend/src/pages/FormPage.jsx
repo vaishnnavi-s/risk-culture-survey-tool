@@ -1,23 +1,55 @@
-import { useState } from "react"
+import {
+  useState,
+  useEffect
+} from "react"
+
+import {
+  createSurvey,
+  updateSurvey
+} from "../services/surveyService"
+
 import "./FormPage.css"
 
-function FormPage() {
+function FormPage({
+  editingSurvey
+}) {
 
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    status: "OPEN",
-    score: ""
-  })
+  const [formData, setFormData] =
+    useState({
+      title: "",
+      description: ""
+    })
 
-  const [errors, setErrors] = useState({})
-  const [message, setMessage] = useState("")
+  const [errors, setErrors] =
+    useState({})
+
+  const [message, setMessage] =
+    useState("")
+
+  useEffect(() => {
+
+    if (editingSurvey) {
+
+      setFormData({
+
+        title:
+          editingSurvey.title,
+
+        description:
+          editingSurvey.description
+
+      })
+
+    }
+
+  }, [editingSurvey])
 
   const handleChange = (e) => {
 
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]:
+        e.target.value
     })
 
     setErrors({
@@ -32,43 +64,74 @@ function FormPage() {
     let newErrors = {}
 
     if (!formData.title.trim()) {
-      newErrors.title = "Title is required"
+
+      newErrors.title =
+        "Title is required"
+
     }
 
-    if (!formData.description.trim()) {
-      newErrors.description = "Description is required"
-    }
+    if (
+      !formData.description.trim()
+    ) {
 
-    if (!formData.score) {
-      newErrors.score = "Score is required"
+      newErrors.description =
+        "Description is required"
+
     }
 
     setErrors(newErrors)
 
-    return Object.keys(newErrors).length === 0
+    return (
+      Object.keys(newErrors)
+        .length === 0
+    )
 
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit =
+    async (e) => {
 
-    e.preventDefault()
+      e.preventDefault()
 
-    if (!validate()) {
-      return
+      if (!validate()) {
+        return
+      }
+
+      let response
+
+      if (editingSurvey) {
+
+        response =
+          await updateSurvey(
+            editingSurvey.id,
+            formData
+          )
+
+        setMessage(
+          "Survey updated successfully!"
+        )
+
+      } else {
+
+        response =
+          await createSurvey(
+            formData
+          )
+
+        setMessage(
+          "Survey created successfully!"
+        )
+
+      }
+
+      console.log(response)
+
+      setFormData({
+        title: "",
+        description: ""
+      })
+
     }
-
-    console.log(formData)
-
-    setMessage("Survey submitted successfully!")
-
-    setFormData({
-      title: "",
-      description: "",
-      status: "OPEN",
-      score: ""
-    })
-
-  }
 
   return (
 
@@ -77,10 +140,16 @@ function FormPage() {
       <div className="form-card">
 
         <h1 className="form-title">
-          Create Risk Survey
+
+          {editingSurvey
+            ? "Edit Survey"
+            : "Create Survey"}
+
         </h1>
 
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={handleSubmit}
+        >
 
           <label>Title</label>
 
@@ -88,74 +157,76 @@ function FormPage() {
             type="text"
             name="title"
             value={formData.title}
-            onChange={handleChange}
-            placeholder="Enter risk title"
+            onChange={
+              handleChange
+            }
+            placeholder="Enter survey title"
           />
 
           {errors.title && (
-            <p className="error">{errors.title}</p>
+
+            <p className="error">
+              {errors.title}
+            </p>
+
           )}
 
-          <label>Description</label>
+          <label>
+            Description
+          </label>
 
           <textarea
             name="description"
-            value={formData.description}
-            onChange={handleChange}
+            value={
+              formData.description
+            }
+            onChange={
+              handleChange
+            }
             placeholder="Enter description"
           />
 
           {errors.description && (
-            <p className="error">{errors.description}</p>
-          )}
 
-          <label>Status</label>
+            <p className="error">
+              {
+                errors.description
+              }
+            </p>
 
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-          >
-            <option value="OPEN">OPEN</option>
-            <option value="CLOSED">CLOSED</option>
-          </select>
-
-          <label>Score</label>
-
-          <input
-            type="number"
-            name="score"
-            value={formData.score}
-            onChange={handleChange}
-            placeholder="Enter score"
-          />
-
-          {errors.score && (
-            <p className="error">{errors.score}</p>
           )}
 
           <button
-  type="submit"
-  style={{
-    width: "100%",
-    padding: "14px",
-    marginTop: "20px",
-    backgroundColor: "blue",
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "16px",
-    fontWeight: "bold",
-    cursor: "pointer"
-  }}
->
-  Submit Survey
-</button>
+            type="submit"
+            style={{
+              width: "100%",
+              padding: "14px",
+              marginTop: "20px",
+              backgroundColor:
+                "blue",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "16px",
+              fontWeight: "bold",
+              cursor: "pointer"
+            }}
+          >
+
+            {editingSurvey
+              ? "Update Survey"
+              : "Submit Survey"}
+
+          </button>
 
         </form>
 
         {message && (
-          <p className="message">{message}</p>
+
+          <p className="message">
+            {message}
+          </p>
+
         )}
 
       </div>

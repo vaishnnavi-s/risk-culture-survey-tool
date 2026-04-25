@@ -1,58 +1,109 @@
-import { getSurveys } from "../services/surveyService"
-import { useEffect, useState } from "react"
+import {
+  getSurveys
+} from "../services/surveyService"
+
+import {
+  useEffect,
+  useState
+} from "react"
+
 import "./ListPage.css"
 
-function ListPage() {
+function ListPage({
+  setEditingSurvey
+}) {
 
-  const [data, setData] = useState([])
+  const [data, setData] =
+    useState([])
 
-  const [page, setPage] = useState(1)
+  const [page, setPage] =
+    useState(0)
 
-  const [sortOrder, setSortOrder] = useState("asc")
+  const [totalPages,
+    setTotalPages] =
+      useState(0)
+
+  const [loading,
+    setLoading] =
+      useState(true)
+
+  const [sortOrder,
+    setSortOrder] =
+      useState("asc")
 
   useEffect(() => {
 
-  const fetchData = async () => {
+    const fetchData =
+      async () => {
 
-    const result = await getSurveys()
+        setLoading(true)
 
-    setData(result.content)
+        const result =
+          await getSurveys(page)
 
-  }
+        setData(
+          result.content
+        )
 
-  fetchData()
+        setTotalPages(
+          result.totalPages
+        )
 
-}, [])
+        setLoading(false)
+
+      }
+
+    fetchData()
+
+  }, [page])
 
   const handleSort = () => {
 
-    const sorted = [...data].sort((a, b) => {
+    const sorted =
+      [...data].sort(
+        (a, b) => {
 
-      if (sortOrder === "asc") {
-        return a.score - b.score
-      }
+          if (
+            sortOrder ===
+            "asc"
+          ) {
 
-      return b.score - a.score
+            return a.title
+              .localeCompare(
+                b.title
+              )
 
-    })
+          }
+
+          return b.title
+            .localeCompare(
+              a.title
+            )
+
+        }
+      )
 
     setData(sorted)
 
     setSortOrder(
-      sortOrder === "asc" ? "desc" : "asc"
+
+      sortOrder === "asc"
+        ? "desc"
+        : "asc"
+
     )
 
   }
 
-  const itemsPerPage = 2
+  if (loading) {
 
-  const startIndex = (page - 1) * itemsPerPage
-
-  const paginatedData =
-    data.slice(
-      startIndex,
-      startIndex + itemsPerPage
+    return (
+      <h2>
+        Loading surveys...
+      </h2>
     )
+
+  }
 
   return (
 
@@ -70,17 +121,24 @@ function ListPage() {
 
             <tr>
 
-              <th>Title</th>
-
-              <th>Description</th>
-
-              <th>Status</th>
-
               <th
-                onClick={handleSort}
-                style={{ cursor: "pointer" }}
+                onClick={
+                  handleSort
+                }
+                style={{
+                  cursor:
+                    "pointer"
+                }}
               >
-                Score ↕
+                Title ↕
+              </th>
+
+              <th>
+                Description
+              </th>
+
+              <th>
+                Action
               </th>
 
             </tr>
@@ -89,33 +147,56 @@ function ListPage() {
 
           <tbody>
 
-            {paginatedData.map((item) => (
+            {data.length ===
+              0 && (
 
-              <tr key={item.id}>
+              <tr>
 
-                <td>{item.title}</td>
-
-                <td>{item.description}</td>
-
-                <td>
-
-                  <span
-                    className={
-                      item.status === "OPEN"
-                        ? "open-status"
-                        : "closed-status"
-                    }
-                  >
-                    {item.status}
-                  </span>
-
+                <td
+                  colSpan="3"
+                >
+                  No surveys found
                 </td>
-
-                <td>{item.score}</td>
 
               </tr>
 
-            ))}
+            )}
+
+            {data.map(
+              (item) => (
+
+                <tr
+                  key={item.id}
+                >
+
+                  <td>
+                    {item.title}
+                  </td>
+
+                  <td>
+                    {
+                      item.description
+                    }
+                  </td>
+
+                  <td>
+
+                    <button
+                      onClick={() =>
+                        setEditingSurvey(
+                          item
+                        )
+                      }
+                    >
+                      Edit
+                    </button>
+
+                  </td>
+
+                </tr>
+
+              )
+            )}
 
           </tbody>
 
@@ -124,20 +205,33 @@ function ListPage() {
         <div className="pagination">
 
           <button
-            onClick={() => setPage(page - 1)}
-            disabled={page === 1}
+            onClick={() =>
+              setPage(
+                page - 1
+              )
+            }
+            disabled={
+              page === 0
+            }
           >
             Previous
           </button>
 
           <span>
-            Page {page}
+
+            Page {page + 1}
+
           </span>
 
           <button
-            onClick={() => setPage(page + 1)}
+            onClick={() =>
+              setPage(
+                page + 1
+              )
+            }
             disabled={
-              startIndex + itemsPerPage >= data.length
+              page + 1 >=
+              totalPages
             }
           >
             Next
