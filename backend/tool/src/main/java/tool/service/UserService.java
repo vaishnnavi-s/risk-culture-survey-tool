@@ -14,10 +14,14 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    // SAVE USER
     public User saveUser(User user) {
-        return userRepository.save(user);
+
+    if (user == null) {
+        throw new IllegalArgumentException("User cannot be null");
     }
+
+    return userRepository.save(user);
+}
 
     // GET ALL USERS
     public List<User> getAllUsers() {

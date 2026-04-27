@@ -1,18 +1,22 @@
 package tool.dto;
 
-public class UserRequest {
-
+public class AuthRequest {
     private String name;
     private String email;
     private String password;
-    private String role;
 
-    public String getName() {
-        return name;
+    public AuthRequest() {
     }
 
+    public AuthRequest(String email, String password) {
+        this.email = email;
+        this.password = password;
+    }
+    public String getName() {
+        return name; 
+    }
     public void setName(String name) {
-        this.name = name;
+        this.name = name; 
     }
 
     public String getEmail() {
@@ -29,13 +33,5 @@ public class UserRequest {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
     }
 }
