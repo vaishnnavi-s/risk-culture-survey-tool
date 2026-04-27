@@ -1,63 +1,46 @@
-import {
-  createContext,
-  useState
-} from "react"
+import { createContext, useContext, useState, useEffect } from "react";
 
-export const AuthContext =
-  createContext()
+const AuthContext = createContext();
 
-export function AuthProvider({
-  children
-}) {
+export function AuthProvider({ children }) {
 
-  const [token, setToken] =
-    useState(
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-      localStorage.getItem(
-        "token"
-      ) || ""
+  useEffect(() => {
 
-    )
+    const token = localStorage.getItem("token");
 
-  const login = (
-    fakeJwtToken
-  ) => {
+    if (token) {
 
-    localStorage.setItem(
-      "token",
-      fakeJwtToken
-    )
+      setIsAuthenticated(true);
 
-    setToken(
-      fakeJwtToken
-    )
+    }
 
-  }
+  }, []);
+
+  const login = (token) => {
+
+    localStorage.setItem("token", token);
+
+    setIsAuthenticated(true);
+
+  };
 
   const logout = () => {
 
-    localStorage.removeItem(
-      "token"
-    )
+    localStorage.removeItem("token");
 
-    setToken("")
+    setIsAuthenticated(false);
 
-  }
+  };
 
   return (
 
     <AuthContext.Provider
       value={{
-
-        token,
-
+        isAuthenticated,
         login,
-
         logout,
-
-        isAuthenticated:
-          !!token
-
       }}
     >
 
@@ -65,6 +48,12 @@ export function AuthProvider({
 
     </AuthContext.Provider>
 
-  )
+  );
+
+}
+
+export function useAuth() {
+
+  return useContext(AuthContext);
 
 }

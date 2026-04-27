@@ -1,54 +1,94 @@
-import { useState } from "react"
+import {
+  Routes,
+  Route,
+  Navigate
+} from "react-router-dom";
 
-import ProtectedRoute
-  from "./components/ProtectedRoute"
+import DashboardPage from "./pages/DashboardPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
-import DashboardPage
-  from "./pages/DashboardPage"
+import EditSurveyPage from "./pages/EditSurveyPage";
 
-import ListPage
-  from "./pages/ListPage"
+import SurveyDetailPage from "./pages/SurveyDetailPage";
 
-import FormPage
-  from "./pages/FormPage"
+import LoginPage from "./pages/LoginPage";
+
+import SurveyListPage from "./pages/SurveyListPage";
+import ErrorBoundary from "./ErrorBoundary";
 
 function App() {
 
-  const [editingSurvey,
-    setEditingSurvey] =
-      useState(null)
+  const token =
+    localStorage.getItem(
+      "token"
+    );
 
   return (
+    <ErrorBoundary>
 
-    <ProtectedRoute>
+    <Routes>
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "40px",
-          paddingBottom: "40px"
-        }}
-      >
+      <Route
+        path="/login"
+        element={<LoginPage />}
+      />
 
-        <DashboardPage />
+      <Route
+        path="/dashboard"
+        element={
+          token
+            ? <DashboardPage />
+            : <Navigate to="/login" />
+        }
+      />
+      <Route
+  path="/analytics"
 
-        <FormPage
-          editingSurvey={editingSurvey}
-        />
+  element={
+    token
+      ? <AnalyticsPage />
+      : <Navigate to="/login" />
+  }
+/>
 
-        <ListPage
-          setEditingSurvey={
-            setEditingSurvey
-          }
-        />
+      <Route
+        path="/surveys"
+        element={
+          token
+            ? <SurveyListPage />
+            : <Navigate to="/login" />
+        }
+      />
 
-      </div>
+      <Route
+        path="/survey/:id"
+        element={
+          token
+            ? <SurveyDetailPage />
+            : <Navigate to="/login" />
+        }
+      />
 
-    </ProtectedRoute>
+      <Route
+        path="/edit/:id"
+        element={
+          token
+            ? <EditSurveyPage />
+            : <Navigate to="/login" />
+        }
+      />
 
-  )
+      <Route
+        path="*"
+        element={
+          <Navigate to="/login" />
+        }
+      />
 
+    </Routes>
+    </ErrorBoundary>
+
+  );
 }
 
-export default App
+export default App;

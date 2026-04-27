@@ -1,159 +1,244 @@
-import {
-  useState,
-  useContext
-} from "react"
+import { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
-import {
-  AuthContext
-} from "../context/AuthContext"
+const LoginPage = () => {
 
-function LoginPage() {
+    const navigate = useNavigate();
 
-  const [username,
-    setUsername] =
-      useState("")
+    const [username, setUsername] =
+        useState("");
 
-  const [password,
-    setPassword] =
-      useState("")
+    const [password, setPassword] =
+        useState("");
 
-  const [error,
-    setError] =
-      useState("")
+    const [error, setError] =
+        useState("");
 
-  const {
-    login
-  } = useContext(
-    AuthContext
-  )
+    const handleLogin = async (
+        e
+    ) => {
 
-  const handleSubmit =
-    (e) => {
+        e.preventDefault();
 
-      e.preventDefault()
+        setError("");
 
-      if (
-        !username ||
-        !password
-      ) {
+        try {
 
-        setError(
-          "All fields are required"
-        )
+            const response =
+                await axios.post(
+                    "http://localhost:8081/auth/login",
+                    {
+                        username,
+                        password
+                    }
+                );
 
-        return
+            const token =
+                response.data;
 
-      }
+            if (
+                token ===
+                    "Invalid password" ||
 
-      const fakeJwtToken =
-        "fake-jwt-token"
+                token ===
+                    "User not found"
+            ) {
 
-      login(
-        fakeJwtToken
-      )
+                setError(token);
 
-      setError("")
+                return;
+            }
 
-    }
+            localStorage.setItem(
+                "token",
+                token
+            );
 
-  return (
+            navigate(
+                "/dashboard"
+            );
 
-    <div
-      style={{
+        } catch {
 
-        display: "flex",
-
-        justifyContent:
-          "center",
-
-        alignItems:
-          "center",
-
-        height: "100vh"
-
-      }}
-    >
-
-      <form
-        onSubmit={
-          handleSubmit
+            setError(
+                "Login failed"
+            );
         }
+    };
 
-        style={{
+    return (
 
-          width: "300px",
-
-          padding: "30px",
-
-          background:
-            "white",
-
-          borderRadius:
-            "10px"
-
-        }}
-      >
-
-        <h2>
-          Login
-        </h2>
-
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) =>
-            setUsername(
-              e.target.value
-            )
-          }
-          style={{
-            width: "100%",
-            marginBottom:
-              "10px"
-          }}
-        />
-
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) =>
-            setPassword(
-              e.target.value
-            )
-          }
-          style={{
-            width: "100%",
-            marginBottom:
-              "10px"
-          }}
-        />
-
-        {error && (
-
-          <p
+        <div
             style={{
-              color: "red"
+                height: "100vh",
+
+                display: "flex",
+
+                justifyContent:
+                    "center",
+
+                alignItems:
+                    "center",
+
+                background:
+                    "linear-gradient(135deg,#0f172a,#1e3a8a)",
+
+                fontFamily:
+                    "Segoe UI"
             }}
-          >
-            {error}
-          </p>
-
-        )}
-
-        <button
-          type="submit"
         >
-          Login
-        </button>
 
-      </form>
+            <form
+                onSubmit={
+                    handleLogin
+                }
 
-    </div>
+                style={{
+                    width: "360px",
 
-  )
+                    background:
+                        "white",
 
-}
+                    padding: "40px",
 
-export default LoginPage
+                    borderRadius:
+                        "20px",
+
+                    boxShadow:
+                        "0 10px 30px rgba(0,0,0,0.3)"
+                }}
+            >
+
+                <h1
+                    style={{
+                        textAlign:
+                            "center",
+
+                        marginBottom:
+                            "30px",
+
+                        color:
+                            "#0f172a"
+                    }}
+                >
+                    Risk Culture Login
+                </h1>
+
+                <input
+                    type="text"
+
+                    placeholder="Username"
+
+                    value={username}
+
+                    onChange={(e) =>
+                        setUsername(
+                            e.target
+                                .value
+                        )
+                    }
+
+                    style={
+                        inputStyle
+                    }
+                />
+
+                <input
+                    type="password"
+
+                    placeholder="Password"
+
+                    value={password}
+
+                    onChange={(e) =>
+                        setPassword(
+                            e.target
+                                .value
+                        )
+                    }
+
+                    style={
+                        inputStyle
+                    }
+                />
+
+                {error && (
+
+                    <p
+                        style={{
+                            color:
+                                "red",
+
+                            marginBottom:
+                                "15px",
+
+                            textAlign:
+                                "center"
+                        }}
+                    >
+                        {error}
+                    </p>
+
+                )}
+
+                <button
+                    type="submit"
+
+                    style={{
+                        width: "100%",
+
+                        padding:
+                            "14px",
+
+                        background:
+                            "#2563eb",
+
+                        color:
+                            "white",
+
+                        border:
+                            "none",
+
+                        borderRadius:
+                            "10px",
+
+                        fontWeight:
+                            "bold",
+
+                        fontSize:
+                            "16px",
+
+                        cursor:
+                            "pointer"
+                    }}
+                >
+                    Login
+                </button>
+
+            </form>
+
+        </div>
+    );
+};
+
+const inputStyle = {
+
+    width: "100%",
+
+    padding: "14px",
+
+    marginBottom: "18px",
+
+    borderRadius: "10px",
+
+    border:
+        "1px solid #cbd5e1",
+
+    fontSize: "15px",
+
+    boxSizing:
+        "border-box"
+};
+
+export default LoginPage;
