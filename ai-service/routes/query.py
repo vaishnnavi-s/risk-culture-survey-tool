@@ -3,104 +3,60 @@ from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from services.groq_client import groq_client
 from services.chroma_client import chroma_client
+from services.cache_service import cache_service        
+from routes.health import record_response_time          
+from routes.health import record_cache_hit              
+from routes.health import record_cache_miss            
 
 logger = logging.getLogger("query")
-
 query_bp = Blueprint("query", __name__)
-
-# How many ChromaDB chunks to retrieve
-TOP_K = 3
-
+TOP_K    = 3
 
 def load_prompt() -> str:
-    """Load the query prompt template from file."""
     try:
         with open("prompts/query_prompt.txt", "r", encoding="utf-8") as f:
             return f.read().strip()
     except FileNotFoundError:
-        logger.error("query_prompt.txt not found in prompts/")
+        logger.error("query_prompt.txt not found")
         raise
 
-
-def build_context(chunks: list[dict]) -> str:
-    """
-    Format retrieved ChromaDB chunks into a single context string
-    that gets injected into the prompt.
-    """
+def build_context(chunks):
     if not chunks:
         return "No relevant documents found."
-
-    context_parts = []
+    parts = []
     for i, chunk in enumerate(chunks, 1):
-        context_parts.append(
-            f"[Document {i}]\n"
-            f"{chunk['text']}\n"
+        parts.append(
+            f"[Document {i}]\n{chunk['text']}\n"
             f"(Source: {chunk['metadata'].get('source', 'knowledge base')}, "
             f"Category: {chunk['metadata'].get('category', 'General')})"
         )
+    return "\n\n".join(parts)
 
-    return "\n\n".join(context_parts)
-
-
-def format_sources(chunks: list[dict]) -> list[dict]:
-    """Format ChromaDB chunks into a clean sources list for the response."""
-    sources = []
-    for chunk in chunks:
-        sources.append({
-            "id":         chunk["id"],
-            "category":   chunk["metadata"].get("category", "General"),
-            "source":     chunk["metadata"].get("source", "knowledge base"),
-            "score":      chunk["score"],
-            "preview":    chunk["text"][:150] + "..."
-                          if len(chunk["text"]) > 150
-                          else chunk["text"]
-        })
-    return sources
-
+def format_sources(chunks):
+    return [{
+        "id":       c["id"],
+        "category": c["metadata"].get("category", "General"),
+        "source":   c["metadata"].get("source", "knowledge base"),
+        "score":    c["score"],
+        "preview":  c["text"][:150] + "..." if len(c["text"]) > 150 else c["text"]
+    } for c in chunks]
 
 @query_bp.route("/query", methods=["POST"])
 def query():
-    """
-    POST /query
-    Body: { "question": "your question here" }
-
-    RAG Pipeline:
-      1. Validate input
-      2. Embed the question
-      3. Retrieve top-3 similar chunks from ChromaDB
-      4. Inject chunks as context into prompt
-      5. Call Groq with context + question
-      6. Return answer + sources
-
-    Returns:
-    {
-        "answer":       str,
-        "sources":      list of { id, category, source, score, preview },
-        "chunks_used":  int,
-        "generated_at": str (ISO timestamp),
-        "meta": {
-            "model_used":       str,
-            "tokens_used":      int,
-            "response_time_ms": int,
-            "is_fallback":      bool
-        }
-    }
-    """
-
-    #1. Validate request
+    # 1. Validate input
     data = request.get_json(silent=True)
-
     if not data:
         return jsonify({
             "error": "Request body must be JSON",
             "code":  "INVALID_JSON"
         }), 400
 
-    question = data.get("question", "").strip()
+    question   = data.get("question", "").strip()
+    skip_cache = data.get("skip_cache", False)          
 
     if not question:
         return jsonify({
-            "error": "Field 'question' is required and cannot be empty",
+            "error": "Field 'question' is required",
             "code":  "MISSING_QUESTION"
         }), 400
 
@@ -116,23 +72,32 @@ def query():
             "code":  "QUESTION_TOO_LONG"
         }), 400
 
-    logger.info(f"RAG query received: {question[:80]}...")
+    # 2. Check cache 
+    cache_key    = cache_service.make_key("query", question)   
+    cached_value = None                                         
 
-    #2. Retrieve top-K chunks from ChromaDB 
+    if not skip_cache:                                         
+        cached_value = cache_service.get(cache_key)          
+        if cached_value:                                        
+            record_cache_hit()                                 
+            logger.info("Returning cached query response")      
+            cached_value["from_cache"] = True                 
+            return jsonify(cached_value), 200                  
+
+    record_cache_miss()                                         
+
+    # 3. Retrieve chunks from ChromaDB 
     try:
         chunks = chroma_client.query(question, n_results=TOP_K)
-        logger.info(f"Retrieved {len(chunks)} chunks from ChromaDB")
     except Exception as e:
         logger.error(f"ChromaDB query failed: {e}")
         return jsonify({
-            "error": "Failed to retrieve documents from knowledge base.",
+            "error": "Failed to retrieve documents.",
             "code":  "CHROMA_ERROR"
         }), 500
 
-    # 3. Build context from chunks
+    # 4. Build context and load prompt
     context = build_context(chunks)
-
-    # 4. Load prompt and inject context
     try:
         prompt_template = load_prompt()
     except FileNotFoundError:
@@ -143,7 +108,7 @@ def query():
 
     system_prompt = prompt_template.replace("{context}", context)
 
-    # 5. Call Groq
+    # 5. Call Groq 
     ai_result = groq_client.chat(
         system_prompt=system_prompt,
         user_message=f"Question: {question}",
@@ -151,14 +116,16 @@ def query():
         max_tokens=500
     )
 
+    record_response_time(ai_result["response_time_ms"])        
+
     # 6. Handle fallback
     if ai_result["is_fallback"]:
-        logger.error("Groq unavailable — returning fallback for /query")
         return jsonify({
-            "answer":       "The AI service is temporarily unavailable. Please try again.",
+            "answer":       "AI service temporarily unavailable.",
             "sources":      format_sources(chunks),
             "chunks_used":  len(chunks),
             "generated_at": datetime.now(timezone.utc).isoformat(),
+            "from_cache":   False,
             "meta": {
                 "model_used":       "unavailable",
                 "tokens_used":      0,
@@ -167,16 +134,21 @@ def query():
             }
         }), 200
 
-    # 7. Return full response
-    return jsonify({
+    # 7. Build response and cache it 
+    result = {
         "answer":       ai_result["content"],
         "sources":      format_sources(chunks),
         "chunks_used":  len(chunks),
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "from_cache":   False,                                
         "meta": {
             "model_used":       ai_result["model_used"],
             "tokens_used":      ai_result["tokens_used"],
             "response_time_ms": ai_result["response_time_ms"],
             "is_fallback":      False
         }
-    }), 200
+    }
+
+    cache_service.set(cache_key, result)                        
+
+    return jsonify(result), 200
